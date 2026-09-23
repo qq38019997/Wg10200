@@ -70,8 +70,13 @@ class _AIWorkspaceScreenState extends ConsumerState<AIWorkspaceScreen> {
         config: dsl,
       );
       if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('策略已保存！'), backgroundColor: AppTheme.accent),
+        const SnackBar(
+          content: Text('策略已保存！'),
+          backgroundColor: AppTheme.accent,
+          duration: Duration(seconds: 2),
+        ),
       );
       Navigator.push(
         context,
@@ -98,6 +103,14 @@ class _AIWorkspaceScreenState extends ConsumerState<AIWorkspaceScreen> {
     });
     _promptCtrl.selection = TextSelection.fromPosition(
       TextPosition(offset: text.length),
+    );
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('已填入: $text', style: const TextStyle(fontSize: 13)),
+        duration: const Duration(seconds: 1),
+        backgroundColor: AppTheme.cardBg,
+      ),
     );
   }
 
