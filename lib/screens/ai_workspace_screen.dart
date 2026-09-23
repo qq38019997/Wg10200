@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
+import '../version.dart';
 import 'strategy_detail_screen.dart';
 
 class AIWorkspaceScreen extends ConsumerStatefulWidget {
@@ -175,6 +176,9 @@ class _AIWorkspaceScreenState extends ConsumerState<AIWorkspaceScreen> {
                         onTap: () => _setPrompt('均线金叉买入，死叉卖出')),
                   ],
                 ),
+                const SizedBox(height: 10),
+                Text('build $kAppBuild',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 11)),
               ],
             ),
           ),

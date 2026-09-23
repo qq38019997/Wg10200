@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../version.dart';
+
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import 'login_screen.dart';
@@ -218,13 +220,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showAboutDialog(
       context: context,
       applicationName: 'CryptoTrader',
-      applicationVersion: '1.0.0',
+      applicationVersion: kAppVersion,
       applicationLegalese: '© 2024 AI 量化交易平台\n支持 OKX · DeepSeek AI',
       children: [
         const SizedBox(height: 16),
         const Text('功能模块：\n• AI 策略生成（DeepSeek）\n• 历史回测\n• 模拟盘 / 实盘交易\n• 实时行情监控',
           style: TextStyle(fontSize: 13, color: Colors.grey),
         ),
+        const SizedBox(height: 12),
+        Text('build $kAppBuild',
+            style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
     );
   }
