@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import 'strategy_edit_screen.dart';
 
 class StrategyDetailScreen extends ConsumerStatefulWidget {
   final Strategy strategy;
@@ -36,7 +37,20 @@ class _StrategyDetailScreenState extends ConsumerState<StrategyDetailScreen> {
         actions: [
           PopupMenuButton<String>(
             onSelected: (v) async {
-              if (v == 'delete') {
+              if (v == 'edit') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => StrategyEditScreen(
+                      strategy: _strategy,
+                      onSaved: () {
+                        widget.onRefresh();
+                        if (mounted) Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                );
+              } else if (v == 'delete') {
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (_) => AlertDialog(
@@ -59,6 +73,7 @@ class _StrategyDetailScreenState extends ConsumerState<StrategyDetailScreen> {
               }
             },
             itemBuilder: (_) => [
+              const PopupMenuItem(value: 'edit', child: Text('编辑策略')),
               const PopupMenuItem(value: 'delete', child: Text('删除策略', style: TextStyle(color: Colors.red))),
             ],
           ),
@@ -131,6 +146,7 @@ class _StrategyDetailScreenState extends ConsumerState<StrategyDetailScreen> {
               rows: [
                 _ConfigRow('类型', _strategy.config.entry.type == 'scheduled' ? '定时入场' : '信号入场'),
                 _ConfigRow('方向', _strategy.config.entry.side == 'buy' ? '买入 (Long)' : '卖出 (Short)'),
+                _ConfigRow('杠杆', '${_strategy.config.entry.leverage.toInt()}x'),
                 _ConfigRow('资金占比', '${_strategy.config.entry.amountPct}%'),
                 if (_strategy.config.entry.time != null)
                   _ConfigRow('执行时间', _strategy.config.entry.time!),
@@ -150,6 +166,8 @@ class _StrategyDetailScreenState extends ConsumerState<StrategyDetailScreen> {
                 _ConfigRow('最大持仓占比', '${_strategy.config.risk.maxPositionPct}%'),
                 _ConfigRow('日亏损限额', '-${_strategy.config.risk.dailyLossLimitPct}%'),
                 _ConfigRow('最大回撤', '-${_strategy.config.risk.maxDrawdownPct}%'),
+                if (_strategy.config.fundingRateOverride != null)
+                  _ConfigRow('资金费率', '${_strategy.config.fundingRateOverride} /8h'),
               ],
             ),
             const SizedBox(height: 32),

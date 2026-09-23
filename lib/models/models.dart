@@ -72,6 +72,7 @@ class StrategyConfig {
   final EntryConfig entry;
   final ExitConfig exit;
   final RiskConfig risk;
+  final double? fundingRateOverride; // null=使用默认值(0.0001), 非null=手动指定
 
   StrategyConfig({
     this.symbol = 'BTC/USDT',
@@ -79,6 +80,7 @@ class StrategyConfig {
     required this.entry,
     required this.exit,
     required this.risk,
+    this.fundingRateOverride,
   });
 
   factory StrategyConfig.fromJson(Map<String, dynamic> json) {
@@ -88,6 +90,9 @@ class StrategyConfig {
       entry: EntryConfig.fromJson(json['entry'] ?? {}),
       exit: ExitConfig.fromJson(json['exit'] ?? {}),
       risk: RiskConfig.fromJson(json['risk'] ?? {}),
+      fundingRateOverride: json['funding_rate_override'] != null
+          ? (json['funding_rate_override'] as num).toDouble()
+          : null,
     );
   }
 
@@ -97,6 +102,7 @@ class StrategyConfig {
     'entry': entry.toJson(),
     'exit': exit.toJson(),
     'risk': risk.toJson(),
+    if (fundingRateOverride != null) 'funding_rate_override': fundingRateOverride,
   };
 }
 
@@ -105,12 +111,14 @@ class EntryConfig {
   final String? time;
   final String side;
   final int amountPct;
+  final double leverage; // 1.0=1x永续, 3/5/10=对应倍数
 
   EntryConfig({
     this.type = 'scheduled',
     this.time,
     this.side = 'buy',
     this.amountPct = 30,
+    this.leverage = 1.0,
   });
 
   factory EntryConfig.fromJson(Map<String, dynamic> json) {
@@ -119,6 +127,7 @@ class EntryConfig {
       time: json['time'],
       side: json['side'] ?? 'buy',
       amountPct: json['amount_pct'] ?? 30,
+      leverage: (json['leverage'] ?? 1.0).toDouble(),
     );
   }
 
@@ -127,6 +136,7 @@ class EntryConfig {
     'time': time,
     'side': side,
     'amount_pct': amountPct,
+    'leverage': leverage,
   };
 }
 
