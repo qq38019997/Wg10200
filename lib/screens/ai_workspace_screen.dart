@@ -18,6 +18,7 @@ class _AIWorkspaceScreenState extends ConsumerState<AIWorkspaceScreen> {
   final _scrollCtrl = ScrollController();
   final List<_ChatMessage> _messages = [];
   bool _loading = false;
+  bool _saving = false;
 
   @override
   void dispose() {
@@ -60,6 +61,8 @@ class _AIWorkspaceScreenState extends ConsumerState<AIWorkspaceScreen> {
   }
 
   Future<void> _saveStrategy(Map<String, dynamic> dsl) async {
+    if (_saving) return;
+    setState(() => _saving = true);
     try {
       final strategy = await apiService.createStrategy(
         name: 'AI策略 ${DateTime.now().millisecondsSinceEpoch % 10000}',
@@ -80,9 +83,12 @@ class _AIWorkspaceScreenState extends ConsumerState<AIWorkspaceScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('保存失败: $e'), backgroundColor: AppTheme.loss),
       );
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -160,7 +166,11 @@ class _AIWorkspaceScreenState extends ConsumerState<AIWorkspaceScreen> {
                     controller: _scrollCtrl,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: _messages.length,
-                    itemBuilder: (_, i) => _MessageBubble(message: _messages[i]),
+                    itemBuilder: (_, i) => _MessageBubble(
+                      message: _messages[i],
+                      saving: _saving,
+                      onSave: (dsl) => _saveStrategy(dsl),
+                    ),
                   ),
           ),
 
@@ -243,7 +253,13 @@ class _ChatMessage {
 
 class _MessageBubble extends StatelessWidget {
   final _ChatMessage message;
-  const _MessageBubble({required this.message});
+  final bool saving;
+  final Future<void> Function(Map<String, dynamic>) onSave;
+  const _MessageBubble({
+    required this.message,
+    this.saving = false,
+    required this.onSave,
+  });
 
   bool get isUser => message.role == 'user';
 
@@ -290,15 +306,21 @@ class _MessageBubble extends StatelessWidget {
                         ),
                         const Spacer(),
                         TextButton(
-                          onPressed: () {
-                            // TODO: navigate to save
-                          },
+                          onPressed: message.dsl == null || saving
+                              ? null
+                              : () => onSave(message.dsl!),
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          child: const Text('保存策略', style: TextStyle(fontSize: 12)),
+                          child: saving
+                              ? const SizedBox(
+                                  width: 14, height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: AppTheme.primary),
+                                )
+                              : const Text('保存策略', style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
