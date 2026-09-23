@@ -19,6 +19,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _tab = 0;
+  final _backtestKey = GlobalKey<BacktestScreenState>();
   List<Strategy> _strategies = [];
   bool _loading = true;
   String? _error;
@@ -47,13 +48,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           _buildStrategyTab(),
           const AIWorkspaceScreen(),
-          const BacktestScreen(),
+          BacktestScreen(key: _backtestKey),
           const SettingsScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _tab,
-        onTap: (i) => setState(() => _tab = i),
+        onTap: (i) {
+          // 切到回测 Tab 时强制重新拉取策略，避免 IndexedStack 缓存导致下拉为空
+          if (i == 2) _backtestKey.currentState?.reloadStrategies();
+          // 切回策略 Tab 时刷新列表（保存新策略后立即可见）
+          if (i == 0) _loadStrategies();
+          setState(() => _tab = i);
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: '策略'),
           BottomNavigationBarItem(icon: Icon(Icons.smart_toy_outlined), label: 'AI 工作台'),

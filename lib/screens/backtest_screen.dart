@@ -28,16 +28,27 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
     _loadStrategies();
   }
 
+  /// 供首页 BottomNavigationBar 在切到回测 Tab 时主动调用，
+  /// 解决 IndexedStack 缓存导致下拉策略列表为空的问题。
+  void reloadStrategies() => _loadStrategies();
+
   Future<void> _loadStrategies() async {
     try {
       final data = await apiService.getStrategies();
+      if (!mounted) return;
       setState(() {
         _strategies = data;
         _loadingStrategies = false;
-        if (data.isNotEmpty) _selectedStrategy = data.first;
+        if (_selectedStrategy == null && data.isNotEmpty) {
+          _selectedStrategy = data.first;
+        }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _loadingStrategies = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('策略加载失败: $e'), backgroundColor: Colors.red),
+      );
     }
   }
 
