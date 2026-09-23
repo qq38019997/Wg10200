@@ -1,0 +1,47 @@
+name: crypto_trader
+description: AI量化交易平台 - Flutter App
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # 状态管理
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # 网络
+  dio: ^5.4.3+1
+
+  # 存储
+  shared_preferences: ^2.2.3
+  flutter_secure_storage: ^9.0.0
+
+  # UI 组件
+  fl_chart: ^0.68.0
+  shimmer: ^3.0.0
+  intl: ^0.19.0
+  badges: ^3.1.2
+
+  # WebSocket
+  web_socket_channel: ^3.0.0
+
+  # WebView（展示图表）
+  flutter_webview_plugin: ^0.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.9
+  riverpod_generator: ^2.4.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
