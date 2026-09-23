@@ -1,6 +1,3 @@
-"""
-策略详情 + 参数编辑
-"""
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

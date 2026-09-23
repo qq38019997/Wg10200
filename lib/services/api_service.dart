@@ -1,6 +1,3 @@
-"""
-API 服务（dio HTTP 客户端）
-"""
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';

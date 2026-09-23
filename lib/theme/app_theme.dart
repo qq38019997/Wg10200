@@ -1,6 +1,3 @@
-"""
-暗色主题配置
-"""
 import 'package:flutter/material.dart';
 
 class AppTheme {
@@ -32,7 +29,7 @@ class AppTheme {
       ),
       iconTheme: IconThemeData(color: textPrimary),
     ),
-    cardTheme: CardTheme(
+    cardTheme: const CardThemeData(
       color: cardBg,
       elevation: 0,
       shape: RoundedRectangleBorder(

@@ -1,6 +1,3 @@
-"""
-主页 — 底部导航 + 策略列表
-"""
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -313,30 +310,31 @@ class _MetricChip extends StatelessWidget {
 class _ActionBtn extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
+  final Color? color;
   final VoidCallback onTap;
 
   const _ActionBtn({
     required this.icon, required this.label,
-    required this.color, required this.onTap,
+    this.color, required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final c = color ?? AppTheme.textSecondary;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          border: Border.all(color: color.withValues(alpha: 0.4)),
+          border: Border.all(color: c.withValues(alpha: 0.4)),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 16),
+            Icon(icon, color: c, size: 16),
             const SizedBox(width: 4),
-            Text(label, style: TextStyle(color: color, fontSize: 13)),
+            Text(label, style: TextStyle(color: c, fontSize: 13)),
           ],
         ),
       ),
