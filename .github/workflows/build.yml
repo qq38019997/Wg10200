@@ -7,6 +7,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 显式授予 release 写权限（gh release upload --clobber / softprops
+    # 都需要 contents:write，否则删/盖 asset 时 403）
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -28,21 +32,21 @@ jobs:
             --target-platform android-arm64,android-arm \
             --split-per-abi
 
-      - name: List outputs
-        run: ls -lh build/app/outputs/flutter-apk/
-
-      - name: Rename & upload to Release (apk-build-latest)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare assets
         run: |
-          set -e
-          cd build/app/outputs/flutter-apk
           # 主 APK 用 arm64（95%+ 现代 Android）
-          cp app-arm64-v8a-debug.apk app-debug.apk
-          ls -lh
-          # 用 gh CLI 发 release，自动覆盖同 tag
-          gh release upload apk-build-latest app-debug.apk \
-            --clobber --repo $GITHUB_REPOSITORY
-          # 副 ABI 也存起来，给老手机用
-          gh release upload apk-build-latest app-armeabi-v7a-debug.apk \
-            --clobber --repo $GITHUB_REPOSITORY || true
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk \
+             build/app/outputs/flutter-apk/app-debug.apk
+          ls -lh build/app/outputs/flutter-apk/
+
+      # 用 softprops/action-gh-release：会自动 overwrite 同 tag 的同名 asset，
+      # 且内置 token 权限处理（contents:write 已够）。无需 --clobber。
+      - name: Upload to Release apk-build-latest
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-build-latest
+          files: |
+            build/app/outputs/flutter-apk/app-debug.apk
+            build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-debug.apk
+          fail_on_unmatched_files: false
