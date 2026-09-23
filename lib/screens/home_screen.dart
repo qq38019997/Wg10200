@@ -78,7 +78,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.cloud_off, size: 56, color: Colors.grey[700]),
+                        const SizedBox(height: 16),
+                        const Text(
+                          '加载失败',
+                          style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '可能是网络到服务器延迟偏高，点下方按钮重试。',
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: _loadStrategies,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('重试'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
               : _strategies.isEmpty
                   ? _buildEmpty()
                   : ListView.builder(
