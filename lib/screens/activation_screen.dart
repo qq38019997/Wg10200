@@ -76,8 +76,16 @@ class _ActivationScreenState extends ConsumerState<ActivationScreen> {
           _loadCodes();
         }
       }
-    } catch (_) {
-      // 静默
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('管理员检查失败: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
