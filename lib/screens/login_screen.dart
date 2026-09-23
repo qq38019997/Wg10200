@@ -1,7 +1,11 @@
+"""
+登录/注册页
+"""
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/api_service.dart';
+import 'activation_screen.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -37,9 +41,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await apiService.register(_usernameCtrl.text.trim(), _passwordCtrl.text);
       }
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+
+      // 登录/注册成功后检查激活状态
+      try {
+        final status = await apiService.getActivationStatus();
+        final activated = status['activated'] ?? false;
+        if (!mounted) return;
+        if (!activated) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const ActivationScreen()),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
+        }
+      } catch (_) {
+        // 激活状态查询失败，默认进激活页
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const ActivationScreen()),
+        );
+      }
     } catch (e) {
       setState(() { _loading = false; _error = e.toString(); });
     }

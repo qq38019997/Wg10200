@@ -1,10 +1,13 @@
+"""
+设置页面
+"""
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../version.dart';
-
 import '../services/api_service.dart';
 import '../theme/app_theme.dart';
+import '../version.dart';
+import 'activation_screen.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -17,11 +20,30 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _okxKeySet = false;
   bool _simulateMode = true;
+  bool _activated = false;
+  DateTime? _activatedUntil;
+  bool _isAdmin = false;
 
   @override
   void initState() {
     super.initState();
     _loadStatus();
+    _loadActivationStatus();
+  }
+
+  Future<void> _loadActivationStatus() async {
+    try {
+      final data = await apiService.getActivationStatus();
+      if (mounted) {
+        setState(() {
+          _activated = data['activated'] ?? false;
+          final untilStr = data['activated_until'];
+          if (untilStr != null) {
+            _activatedUntil = DateTime.tryParse(untilStr.toString());
+          }
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadStatus() async {
@@ -66,6 +88,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onChanged: (v) async {
                     setState(() => _simulateMode = v);
                     await apiService.switchMode(v ? 'simulate' : 'live');
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // 激活状态
+          _SectionTitle('授权'),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Icon(
+                    _activated ? Icons.verified : Icons.gpp_bad,
+                    color: _activated ? AppTheme.accent : AppTheme.loss,
+                  ),
+                  title: const Text('激活状态', style: TextStyle(color: Colors.white)),
+                  subtitle: Text(
+                    _activated
+                        ? (_activatedUntil != null
+                            ? '已激活 · 至 ${_formatDate(_activatedUntil!)}'
+                            : '已激活')
+                        : '未激活',
+                    style: TextStyle(
+                      color: _activated ? AppTheme.accent : Colors.grey[500],
+                      fontSize: 12,
+                    ),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ActivationScreen(navigateToHomeOnSuccess: false)),
+                    ).then((_) => _loadActivationStatus());
                   },
                 ),
               ],
@@ -217,21 +274,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showAbout() {
-    showAboutDialog(
+    showDialog(
       context: context,
-      applicationName: 'CryptoTrader',
-      applicationVersion: kAppVersion,
-      applicationLegalese: '© 2024 AI 量化交易平台\n支持 OKX · DeepSeek AI',
-      children: [
-        const SizedBox(height: 16),
-        const Text('功能模块：\n• AI 策略生成（DeepSeek）\n• 历史回测\n• 模拟盘 / 实盘交易\n• 实时行情监控',
-          style: TextStyle(fontSize: 13, color: Colors.grey),
+      builder: (_) => AlertDialog(
+        title: const Text('关于 CryptoTrader'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('版本: $kAppVersion (build $kAppBuild)',
+              style: const TextStyle(fontSize: 14, color: Colors.white)),
+            const SizedBox(height: 12),
+            const Text('功能模块：\n• AI 策略生成（DeepSeek）\n• 历史回测\n• 模拟盘 / 实盘交易\n• 实时行情监控',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        Text('build $kAppBuild',
-            style: const TextStyle(fontSize: 12, color: Colors.grey)),
-      ],
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('确定')),
+        ],
+      ),
     );
+  }
+
+  String _formatDate(DateTime dt) {
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
+           '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }
 
