@@ -1,5 +1,6 @@
 /// 激活码页面 — 用户输入激活码 / 查看激活状态 / 管理员生成码+列码
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/api_service.dart';
@@ -462,7 +463,7 @@ class _ActivationScreenState extends ConsumerState<ActivationScreen> {
                         onPressed: () {
                           // 复制到剪贴板
                           final text = _adminSuccess!.split('\n\n').last;
-                          // ignore: deprecated_member_use
+                          
                           Clipboard.setData(ClipboardData(text: text));
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -614,7 +615,7 @@ class _ActivationScreenState extends ConsumerState<ActivationScreen> {
             icon: const Icon(Icons.copy, size: 16),
             color: color,
             onPressed: () {
-              // ignore: deprecated_member_use
+              
               Clipboard.setData(ClipboardData(text: code));
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
