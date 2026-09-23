@@ -9,10 +9,10 @@ class BacktestScreen extends ConsumerStatefulWidget {
   const BacktestScreen({super.key});
 
   @override
-  ConsumerState<BacktestScreen> createState() => _BacktestScreenState();
+  ConsumerState<BacktestScreen> createState() => BacktestScreenState();
 }
 
-class _BacktestScreenState extends ConsumerState<BacktestScreen> {
+class BacktestScreenState extends ConsumerState<BacktestScreen> {
   List<Strategy> _strategies = [];
   Strategy? _selectedStrategy;
   DateTime _startDate = DateTime.now().subtract(const Duration(days: 90));
