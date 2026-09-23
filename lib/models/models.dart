@@ -54,6 +54,16 @@ class Strategy {
     'total_trades': totalTrades,
     'win_rate': winRate,
   };
+
+  // DropdownButton<Strategy> 等控件需要按 id 判等，否则 reload 后
+  // 反序列化的新对象与旧 _selectedStrategy 引用身份不等 → 红屏 assertion。
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Strategy && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 class StrategyConfig {

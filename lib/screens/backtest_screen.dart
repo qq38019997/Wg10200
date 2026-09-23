@@ -39,7 +39,16 @@ class BacktestScreenState extends ConsumerState<BacktestScreen> {
       setState(() {
         _strategies = data;
         _loadingStrategies = false;
-        if (_selectedStrategy == null && data.isNotEmpty) {
+        // reload 时按 id 匹配旧选中项，保留用户选择；若该策略已被删则置空。
+        if (data.isEmpty) {
+          _selectedStrategy = null;
+        } else if (_selectedStrategy != null) {
+          final match = data.firstWhere(
+            (s) => s.id == _selectedStrategy!.id,
+            orElse: () => data.first,
+          );
+          _selectedStrategy = match;
+        } else {
           _selectedStrategy = data.first;
         }
       });
