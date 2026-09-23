@@ -12,13 +12,13 @@ if (localPropertiesFile.exists()) {
     }
 }
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '5'
-def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0.5'
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '6'
+def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0.6'
 
 android {
     namespace "com.example.crypto_trader"
     compileSdk 36
-    ndkVersion flutter.ndkVersion
+    ndkVersion "27.0.12077973"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

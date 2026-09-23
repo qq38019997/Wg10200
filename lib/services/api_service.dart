@@ -1,6 +1,4 @@
-"""
-API 服务（dio HTTP 客户端）
-"""
+/// API 服务（dio HTTP 客户端）
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -8,10 +6,13 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/models.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://47.82.76.6:8000/api/v1';
+  static const String baseUrl = 'http://47.82.76.6/api/v1';
 
   late final Dio _dio;
   final _storage = const FlutterSecureStorage();
+
+  /// 检查是否已有 token
+  bool get hasToken => _dio.options.headers['Authorization'] != null;
 
   ApiService() {
     _dio = Dio(BaseOptions(

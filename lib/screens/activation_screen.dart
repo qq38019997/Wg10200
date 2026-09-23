@@ -1,6 +1,4 @@
-"""
-激活码页面 — 用户输入激活码 / 查看激活状态
-"""
+/// 激活码页面 — 用户输入激活码 / 查看激活状态
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

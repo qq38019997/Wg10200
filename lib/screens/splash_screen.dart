@@ -1,6 +1,4 @@
-"""
-闪屏页 — 检查 token + 激活状态，决定跳转目标
-"""
+/// 闪屏页 — 检查 token + 激活状态，决定跳转目标
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -31,7 +29,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     if (!mounted) return;
 
     // 检查是否有 token
-    final hasToken = apiService._dio.options.headers['Authorization'] != null;
+    final hasToken = apiService.hasToken;
     if (!hasToken) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginScreen()),
