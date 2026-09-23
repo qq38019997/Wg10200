@@ -1,4 +1,4 @@
-/// 激活码页面 — 用户输入激活码 / 查看激活状态
+/// 激活码页面 — 用户输入激活码 / 查看激活状态 / 管理员生成码+列码
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,6 +17,7 @@ class ActivationScreen extends ConsumerStatefulWidget {
 
 class _ActivationScreenState extends ConsumerState<ActivationScreen> {
   final _codeCtrl = TextEditingController();
+  final _genCountCtrl = TextEditingController(text: '1');
   bool _loading = false;
   bool _checking = true;
   String? _error;
@@ -26,15 +27,25 @@ class _ActivationScreenState extends ConsumerState<ActivationScreen> {
   bool _activated = false;
   DateTime? _activatedUntil;
 
+  // 管理员
+  bool _isAdmin = false;
+  bool _adminLoading = false;
+  String? _adminError;
+  String? _adminSuccess;
+  String _genType = 'trial'; // trial | month
+  List<dynamic> _codes = [];
+
   @override
   void initState() {
     super.initState();
     _checkStatus();
+    _checkAdmin();
   }
 
   @override
   void dispose() {
     _codeCtrl.dispose();
+    _genCountCtrl.dispose();
     super.dispose();
   }
 
@@ -51,6 +62,64 @@ class _ActivationScreenState extends ConsumerState<ActivationScreen> {
       // 静默处理
     } finally {
       if (mounted) setState(() { _checking = false; });
+    }
+  }
+
+  Future<void> _checkAdmin() async {
+    try {
+      final me = await apiService.getMe();
+      final admin = me['is_admin'] ?? false;
+      if (mounted) {
+        setState(() { _isAdmin = admin; });
+        if (admin) {
+          _loadCodes();
+        }
+      }
+    } catch (_) {
+      // 静默
+    }
+  }
+
+  Future<void> _loadCodes() async {
+    setState(() { _adminLoading = true; _adminError = null; });
+    try {
+      final list = await apiService.listActivationCodes();
+      if (mounted) setState(() { _codes = list; });
+    } catch (e) {
+      if (mounted) setState(() { _adminError = '加载码列表失败'; });
+    } finally {
+      if (mounted) setState(() { _adminLoading = false; });
+    }
+  }
+
+  Future<void> _generateCodes() async {
+    final countStr = _genCountCtrl.text.trim();
+    final count = int.tryParse(countStr) ?? 1;
+    if (count < 1 || count > 100) {
+      setState(() { _adminError = '数量须 1-100'; });
+      return;
+    }
+
+    setState(() { _adminLoading = true; _adminError = null; _adminSuccess = null; });
+    try {
+      final data = await apiService.generateCodes(_genType, count);
+      final codes = data['codes'] as List? ?? [];
+      final codeStrs = codes.map((c) => c.toString()).join('\n');
+      if (mounted) {
+        setState(() {
+          _adminSuccess = '生成 ${codes.length} 个${_genType == 'trial' ? '试用' : '正式'}码：\n\n$codeStrs';
+        });
+        _loadCodes();
+      }
+    } catch (e) {
+      String msg = '生成失败';
+      final estr = e.toString();
+      if (estr.contains('403')) {
+        msg = '无权限：仅管理员可操作';
+      }
+      if (mounted) setState(() { _adminError = msg; });
+    } finally {
+      if (mounted) setState(() { _adminLoading = false; });
     }
   }
 
@@ -123,7 +192,7 @@ class _ActivationScreenState extends ConsumerState<ActivationScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _checkStatus,
+            onPressed: () { _checkStatus(); _checkAdmin(); },
           ),
         ],
       ),
@@ -259,9 +328,303 @@ class _ActivationScreenState extends ConsumerState<ActivationScreen> {
                   ),
                 ),
               ],
+
+              // ── 管理员区域 ──
+              if (_isAdmin) ...[
+                const SizedBox(height: 40),
+                _buildAdminSection(),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // ── 管理员面板 ──
+  Widget _buildAdminSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF334155)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 标题
+          Row(
+            children: [
+              const Icon(Icons.admin_panel_settings, color: Color(0xFF60A5FA), size: 24),
+              const SizedBox(width: 8),
+              const Text(
+                '管理员面板',
+                style: TextStyle(
+                  color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.refresh, size: 20, color: Color(0xFF60A5FA)),
+                onPressed: _loadCodes,
+                tooltip: '刷新码列表',
+              ),
+            ],
+          ),
+          const Divider(color: Color(0xFF334155), height: 24),
+
+          // 生成码
+          const Text(
+            '生成激活码',
+            style: TextStyle(color: Color(0xFFA0AEC0), fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+
+          // 类型选择
+          Row(
+            children: [
+              ChoiceChip(
+                label: const Text('试用码 (+1天)'),
+                selected: _genType == 'trial',
+                onSelected: (_) => setState(() { _genType = 'trial'; }),
+                selectedColor: const Color(0xFF60A5FA).withValues(alpha: 0.3),
+                labelStyle: TextStyle(
+                  color: _genType == 'trial' ? Colors.white : const Color(0xFFA0AEC0),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: const Text('正式码 (+30天)'),
+                selected: _genType == 'month',
+                onSelected: (_) => setState(() { _genType = 'month'; }),
+                selectedColor: const Color(0xFF60A5FA).withValues(alpha: 0.3),
+                labelStyle: TextStyle(
+                  color: _genType == 'month' ? Colors.white : const Color(0xFFA0AEC0),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // 数量 + 生成按钮
+          Row(
+            children: [
+              SizedBox(
+                width: 80,
+                child: TextField(
+                  controller: _genCountCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    hintText: '1',
+                    hintStyle: TextStyle(color: Colors.grey[600]),
+                    isDense: true,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _adminLoading ? null : _generateCodes,
+                  icon: _adminLoading
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.add_circle_outline, size: 20),
+                  label: Text('生成 ${_genType == 'trial' ? '试用' : '正式'}码'),
+                ),
+              ),
+            ],
+          ),
+
+          // 生成结果
+          if (_adminSuccess != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF60A5FA).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF60A5FA).withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Color(0xFF60A5FA), size: 18),
+                      const SizedBox(width: 8),
+                      const Text('生成成功', style: TextStyle(color: Color(0xFF60A5FA), fontWeight: FontWeight.w600)),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.copy, size: 16, color: Color(0xFF60A5FA)),
+                        onPressed: () {
+                          // 复制到剪贴板
+                          final text = _adminSuccess!.split('\n\n').last;
+                          // ignore: deprecated_member_use
+                          Clipboard.setData(ClipboardData(text: text));
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('已复制到剪贴板'), duration: Duration(seconds: 1)),
+                            );
+                          }
+                        },
+                        tooltip: '复制码',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SelectableText(
+                    _adminSuccess!,
+                    style: const TextStyle(
+                      color: Colors.white, fontSize: 14, fontFamily: 'monospace', height: 1.8,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          if (_adminError != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(_adminError!, style: const TextStyle(color: Colors.red, fontSize: 13))),
+                ],
+              ),
+            ),
+          ],
+
+          // 码列表
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              const Text(
+                '已生成的激活码',
+                style: TextStyle(color: Color(0xFFA0AEC0), fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const Spacer(),
+              Text('${_codes.length} 个', style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          if (_codes.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.grey[900],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text('暂无激活码', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+              ),
+            )
+          else
+            ..._codes.map((c) => _buildCodeItem(c)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCodeItem(dynamic c) {
+    final code = c['code'] ?? '';
+    final type = c['type'] ?? '';
+    final status = c['status'] ?? '';
+    final usedBy = c['used_by'];
+
+    final isUsed = status == 'used';
+    final color = isUsed ? Colors.grey : const Color(0xFF60A5FA);
+    final typeLabel = type == 'trial' ? '试用' : '正式';
+    final statusLabel = isUsed ? '已使用' : '未使用';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SelectableText(
+                  code,
+                  style: TextStyle(
+                    color: isUsed ? Colors.grey[500] : Colors.white,
+                    fontSize: 14, fontFamily: 'monospace', letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        typeLabel,
+                        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: (isUsed ? Colors.grey : AppTheme.accent).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        statusLabel,
+                        style: TextStyle(
+                          color: isUsed ? Colors.grey[400] : AppTheme.accent,
+                          fontSize: 11, fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (isUsed && usedBy != null) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        '用户: ${usedBy.toString().substring(0, 8)}...',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.copy, size: 16),
+            color: color,
+            onPressed: () {
+              // ignore: deprecated_member_use
+              Clipboard.setData(ClipboardData(text: code));
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('已复制: $code'), duration: const Duration(seconds: 1)),
+                );
+              }
+            },
+            tooltip: '复制',
+          ),
+        ],
       ),
     );
   }

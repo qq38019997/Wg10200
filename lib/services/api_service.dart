@@ -160,6 +160,12 @@ class ApiService {
     return Map<String, dynamic>.from(resp.data);
   }
 
+  // ── 用户信息 ──────────────────────────────────────────
+  Future<Map<String, dynamic>> getMe() async {
+    final resp = await _dio.get('/auth/me');
+    return resp.data; // {id, username, is_admin, activated_until}
+  }
+
   // ── 激活码 ──────────────────────────────────────────────
   Future<Map<String, dynamic>> activate(String code) async {
     final resp = await _dio.post('/activation/activate', data: {'code': code});
