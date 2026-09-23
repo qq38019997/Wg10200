@@ -92,6 +92,15 @@ class _AIWorkspaceScreenState extends ConsumerState<AIWorkspaceScreen> {
     }
   }
 
+  void _setPrompt(String text) {
+    setState(() {
+      _promptCtrl.text = text;
+    });
+    _promptCtrl.selection = TextSelection.fromPosition(
+      TextPosition(offset: text.length),
+    );
+  }
+
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollCtrl.hasClients) {
@@ -143,10 +152,14 @@ class _AIWorkspaceScreenState extends ConsumerState<AIWorkspaceScreen> {
                 Wrap(
                   spacing: 8, runSpacing: 8,
                   children: [
-                    _HintChip('BTC 1d 止盈10%止损5%'),
-                    _HintChip('ETH 4H 趋势策略'),
-                    _HintChip('波段策略 持仓7天'),
-                    _HintChip('金叉买入 死叉卖出'),
+                    _HintChip('BTC 1d 止盈10%止损5%',
+                        onTap: () => _setPrompt('BTC 日线，止盈 10%，止损 5%')),
+                    _HintChip('ETH 4H 趋势策略',
+                        onTap: () => _setPrompt('ETH 4 小时趋势跟踪策略')),
+                    _HintChip('波段策略 持仓7天',
+                        onTap: () => _setPrompt('波段策略，预期持仓周期 7 天')),
+                    _HintChip('金叉买入 死叉卖出',
+                        onTap: () => _setPrompt('均线金叉买入，死叉卖出')),
                   ],
                 ),
               ],
@@ -224,12 +237,13 @@ class _AIWorkspaceScreenState extends ConsumerState<AIWorkspaceScreen> {
 
 class _HintChip extends StatelessWidget {
   final String label;
-  const _HintChip(this.label);
+  final VoidCallback onTap;
+  const _HintChip(this.label, {required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {},
+      onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
