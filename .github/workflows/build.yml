@@ -1,44 +1,48 @@
 name: Build APK
-
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.27.1
           cache: true
 
-      - name: Install dependencies
+      - name: pub get
         run: flutter pub get
 
-      - name: Build debug APK
-        run: flutter build apk --debug
+      - name: Lint analyze (warnings only)
+        run: flutter analyze --no-fatal-infos || true
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
-          retention-days: 7
+      - name: Build split debug APKs (arm64 + arm, no x86)
+        run: |
+          flutter build apk --debug \
+            --target-platform android-arm64,android-arm \
+            --split-per-abi
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: apk-build-latest
-          name: Crypto Trader APK (latest)
-          files: build/app/outputs/flutter-apk/app-debug.apk
-          prerelease: true
+      - name: List outputs
+        run: ls -lh build/app/outputs/flutter-apk/
+
+      - name: Rename & upload to Release (apk-build-latest)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          cd build/app/outputs/flutter-apk
+          # 主 APK 用 arm64（95%+ 现代 Android）
+          cp app-arm64-v8a-debug.apk app-debug.apk
+          ls -lh
+          # 用 gh CLI 发 release，自动覆盖同 tag
+          gh release upload apk-build-latest app-debug.apk \
+            --clobber --repo $GITHUB_REPOSITORY
+          # 副 ABI 也存起来，给老手机用
+          gh release upload apk-build-latest app-armeabi-v7a-debug.apk \
+            --clobber --repo $GITHUB_REPOSITORY || true
