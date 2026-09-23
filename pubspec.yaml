@@ -31,8 +31,6 @@ dependencies:
   # WebSocket
   web_socket_channel: ^3.0.0
 
-  # WebView（展示图表）
-  flutter_webview_plugin: ^0.4.0
 
 dev_dependencies:
   flutter_test:
