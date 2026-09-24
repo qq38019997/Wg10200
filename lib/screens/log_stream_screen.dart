@@ -8,6 +8,7 @@ import 'package:crypto_trader/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 /// 运行日志：首页全局事件流，WebSocket 订阅后端 /ws/events。
+/// 对 SIGNAL_CHECK / ENTRY 事件，展开显示每条策略条件的命中情况（why）。
 class LogStreamScreen extends StatefulWidget {
   const LogStreamScreen({super.key});
 
@@ -100,15 +101,6 @@ class _LogStreamScreenState extends State<LogStreamScreen> {
     _reconnectTimer = Timer(const Duration(seconds: 3), _connect);
   }
 
-  Color _badgeColor(StrategyEvent e) {
-    final k = e.kind.toUpperCase();
-    if (k == 'TAKE_PROFIT' || k == 'START') return AppTheme.accent;
-    if (k == 'STOP_LOSS' || k == 'STOP' || k == 'ERROR') return AppTheme.loss;
-    if (k == 'ENTRY') return Colors.blue;
-    if (k == 'FUNDING') return Colors.amber;
-    return AppTheme.textSecondary;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -180,6 +172,7 @@ class _EventCard extends StatelessWidget {
     final t = event.createdAt.toLocal();
     final time =
         '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:${t.second.toString().padLeft(2, '0')}';
+    final conditions = _extractConditions(event.payload);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -206,6 +199,13 @@ class _EventCard extends StatelessWidget {
                   event.message,
                   style: const TextStyle(fontSize: 14, color: Colors.white),
                 ),
+                if (conditions != null && conditions.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  _ConditionsView(
+                    conditions: conditions,
+                    score: (event.payload?['score'] as String?) ?? '',
+                  ),
+                ],
                 const SizedBox(height: 2),
                 Row(
                   children: [
@@ -232,12 +232,132 @@ class _EventCard extends StatelessWidget {
     );
   }
 
+  static List<Map<String, dynamic>>? _extractConditions(Map<String, dynamic>? payload) {
+    if (payload == null) return null;
+    final raw = payload['conditions'];
+    if (raw is! List) return null;
+    return raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
   Color _kindColor(String kind) {
     final k = kind.toUpperCase();
     if (k == 'TAKE_PROFIT' || k == 'START') return AppTheme.accent;
     if (k == 'STOP_LOSS' || k == 'STOP' || k == 'ERROR') return AppTheme.loss;
     if (k == 'ENTRY') return Colors.blue;
+    if (k == 'SIGNAL_CHECK') return Colors.teal;
     if (k == 'FUNDING') return Colors.amber;
     return AppTheme.textSecondary;
+  }
+}
+
+/// 策略条件命中明细（可折叠）。默认展开——这是用户最关心的「为什么」。
+class _ConditionsView extends StatefulWidget {
+  final List<Map<String, dynamic>> conditions;
+  final String score;
+  const _ConditionsView({required this.conditions, required this.score});
+
+  @override
+  State<_ConditionsView> createState() => _ConditionsViewState();
+}
+
+class _ConditionsViewState extends State<_ConditionsView> {
+  bool _expanded = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final passed = widget.conditions.where((c) => c['passed'] == true).length;
+    final total = widget.conditions.length;
+    final allPass = passed == total;
+    final headerColor = allPass ? AppTheme.accent : AppTheme.textSecondary;
+    final scoreLabel = widget.score.isNotEmpty ? widget.score : '$passed/$total';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            onTap: () => setState(() => _expanded = !_expanded),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                Icon(
+                  allPass ? Icons.check_circle_outline : Icons.rule,
+                  size: 14,
+                  color: headerColor,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '条件 $scoreLabel',
+                  style: TextStyle(fontSize: 12, color: headerColor, fontWeight: FontWeight.w600),
+                ),
+                const Spacer(),
+                Icon(
+                  _expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 16,
+                  color: AppTheme.textSecondary,
+                ),
+              ],
+            ),
+          ),
+          if (_expanded) ...[
+            const SizedBox(height: 4),
+            for (final c in widget.conditions) _ConditionRow(cond: c),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ConditionRow extends StatelessWidget {
+  final Map<String, dynamic> cond;
+  const _ConditionRow({required this.cond});
+
+  @override
+  Widget build(BuildContext context) {
+    final ok = cond['passed'] == true;
+    final label = (cond['label'] ?? cond['indicator'] ?? '条件').toString();
+    final detail = (cond['detail'] ?? '').toString();
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            ok ? Icons.check : Icons.close,
+            size: 13,
+            color: ok ? AppTheme.accent : AppTheme.loss,
+          ),
+          const SizedBox(width: 5),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: ok ? Colors.white : AppTheme.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (detail.isNotEmpty)
+                    TextSpan(
+                      text: '  $detail',
+                      style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
