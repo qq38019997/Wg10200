@@ -43,12 +43,14 @@ class _AIWorkspaceScreenState extends ConsumerState<AIWorkspaceScreen> {
       final result = await apiService.generateStrategy(prompt);
       final dsl = result['dsl'] as Map<String, dynamic>;
       final explanation = result['explanation'] as String;
+      final coverage = result['coverage'] as List<dynamic>?;
 
       setState(() {
         _messages.add(_ChatMessage(
           role: 'assistant',
           content: explanation,
           dsl: dsl,
+          coverage: coverage,
         ));
         _loading = false;
       });
@@ -278,8 +280,14 @@ class _ChatMessage {
   final String role;      // user | assistant
   final String content;
   final Map<String, dynamic>? dsl;
+  final List<dynamic>? coverage;
 
-  _ChatMessage({required this.role, required this.content, this.dsl});
+  _ChatMessage({
+    required this.role,
+    required this.content,
+    this.dsl,
+    this.coverage,
+  });
 }
 
 class _MessageBubble extends StatelessWidget {
@@ -365,6 +373,48 @@ class _MessageBubble extends StatelessWidget {
                         '止盈 +${message.dsl!['exit']['take_profit_pct']}% / 止损 -${message.dsl!['exit']['stop_loss_pct']}%',
                         style: const TextStyle(color: Colors.white70, fontSize: 12),
                       ),
+                    if (message.coverage != null && message.coverage!.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      const Divider(height: 1, color: Colors.white12),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.checklist, color: Colors.white54, size: 14),
+                          const SizedBox(width: 4),
+                          Text('意图自检清单',
+                              style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ...message.coverage!.map((raw) {
+                        final item = raw as Map<String, dynamic>;
+                        final covered = item['covered'] == true;
+                        final req = (item['requirement'] ?? '').toString();
+                        final note = (item['note'] ?? '').toString();
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 5),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(covered ? '✅' : '❌',
+                                  style: const TextStyle(fontSize: 12)),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  covered
+                                      ? req
+                                      : '$req${note.isNotEmpty ? '（未支持：$note）' : '（未映射到 DSL）'}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: covered ? Colors.white70 : AppTheme.loss,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
                   ],
                 ),
               ),
