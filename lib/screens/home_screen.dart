@@ -9,6 +9,7 @@ import 'backtest_screen.dart';
 import 'login_screen.dart';
 import 'strategy_detail_screen.dart';
 import 'settings_screen.dart';
+import 'log_stream_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -50,6 +51,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           const AIWorkspaceScreen(),
           BacktestScreen(key: _backtestKey),
           const SettingsScreen(),
+          const LogStreamScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -66,6 +68,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.smart_toy_outlined), label: 'AI 工作台'),
           BottomNavigationBarItem(icon: Icon(Icons.analytics_outlined), label: '回测'),
           BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: '设置'),
+          BottomNavigationBarItem(icon: Icon(Icons.receipt_long_outlined), label: '日志'),
         ],
       ),
     );
