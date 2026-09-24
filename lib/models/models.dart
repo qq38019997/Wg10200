@@ -219,3 +219,37 @@ enum StrategyStatus {
     }
   }
 }
+
+
+/// 运行日志事件（来自后端 strategy_events 表 / WS 推送）
+class StrategyEvent {
+  final String id;
+  final String? strategyId;
+  final String level;   // info | warn | error
+  final String kind;    // ENTRY | EXIT | TAKE_PROFIT | STOP_LOSS | FUNDING | START | STOP | PAUSE | RESUME | RISK | BALANCE | TIMEOUT | ERROR
+  final String message;
+  final Map<String, dynamic>? payload;
+  final DateTime createdAt;
+
+  StrategyEvent({
+    required this.id,
+    this.strategyId,
+    required this.level,
+    required this.kind,
+    required this.message,
+    this.payload,
+    required this.createdAt,
+  });
+
+  factory StrategyEvent.fromJson(Map<String, dynamic> json) {
+    return StrategyEvent(
+      id: json['id'],
+      strategyId: json['strategy_id'],
+      level: json['level'] ?? 'info',
+      kind: json['kind'] ?? 'INFO',
+      message: json['message'] ?? '',
+      payload: json['payload'] is Map ? Map<String, dynamic>.from(json['payload']) : null,
+      createdAt: DateTime.parse(json['created_at']).toUtc(),
+    );
+  }
+}
