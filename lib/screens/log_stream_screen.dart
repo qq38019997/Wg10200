@@ -173,6 +173,7 @@ class _EventCard extends StatelessWidget {
     final time =
         '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:${t.second.toString().padLeft(2, '0')}';
     final conditions = _extractConditions(event.payload);
+    final tradeParams = _extractTradeParams(event.payload);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -199,6 +200,10 @@ class _EventCard extends StatelessWidget {
                   event.message,
                   style: const TextStyle(fontSize: 14, color: Colors.white),
                 ),
+                if (tradeParams != null) ...[
+                  const SizedBox(height: 6),
+                  _TradeParamsView(params: tradeParams),
+                ],
                 if (conditions != null && conditions.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   _ConditionsView(
@@ -237,6 +242,14 @@ class _EventCard extends StatelessWidget {
     final raw = payload['conditions'];
     if (raw is! List) return null;
     return raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
+  static Map<String, dynamic>? _extractTradeParams(Map<String, dynamic>? payload) {
+    if (payload == null) return null;
+    final Map<String, dynamic> out = {};
+    if (payload['stop_loss'] is Map) out['stop_loss'] = payload['stop_loss'];
+    if (payload['position_sizing'] is Map) out['position_sizing'] = payload['position_sizing'];
+    return out.isEmpty ? null : out;
   }
 
   Color _kindColor(String kind) {
@@ -357,6 +370,83 @@ class _ConditionRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 开仓参数：结构位止损 + 动态仓位（选项2 新增字段）。
+class _TradeParamsView extends StatelessWidget {
+  final Map<String, dynamic> params;
+  const _TradeParamsView({required this.params});
+
+  @override
+  Widget build(BuildContext context) {
+    final sl = params['stop_loss'] as Map<String, dynamic>?;
+    final sizing = params['position_sizing'] as Map<String, dynamic>?;
+    final chips = <Widget>[];
+    if (sl != null) {
+      final type = sl['type']?.toString() ?? 'percent';
+      if (type == 'structural') {
+        final ref = sl['ref']?.toString() ?? '';
+        final refPrice = _fmt(sl['ref_price']);
+        final offset = _fmt(sl['offset_pct']);
+        final stop = _fmt(sl['stop_price']);
+        final slPct = _fmt(sl['sl_pct']);
+        chips.add(_ParamChip(
+          label: '结构位止损',
+          value: '$stop（${ref}@$refPrice +$offset%）≈ $slPct%',
+        ));
+      } else {
+        chips.add(_ParamChip(label: '止损', value: '${_fmt(sl['sl_pct'])}%'));
+      }
+    }
+    if (sizing != null) {
+      final mode = sizing['mode']?.toString() ?? '';
+      final value = _fmt(sizing['value']);
+      final base = _fmt(sizing['base_usdt']);
+      if (mode == 'available_margin_pct') {
+        chips.add(_ParamChip(label: '动态仓位', value: '$value% 可用保证金 ≈ $base USDT'));
+      } else {
+        chips.add(_ParamChip(label: '仓位', value: value));
+      }
+    }
+    return Wrap(spacing: 6, runSpacing: 6, children: chips);
+  }
+
+  String _fmt(dynamic v) {
+    if (v == null) return '-';
+    if (v is num) {
+      if (v == v.roundToDouble()) return v.toInt().toString();
+      return v.toStringAsFixed(v.abs() < 10 ? 2 : 0);
+    }
+    return v.toString();
+  }
+}
+
+class _ParamChip extends StatelessWidget {
+  final String label;
+  final String value;
+  const _ParamChip({required this.label, required this.value});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.25)),
+      ),
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$label  ',
+              style: const TextStyle(fontSize: 11, color: AppTheme.accent, fontWeight: FontWeight.w600),
+            ),
+            TextSpan(text: value, style: const TextStyle(fontSize: 11, color: Colors.white)),
+          ],
+        ),
       ),
     );
   }
