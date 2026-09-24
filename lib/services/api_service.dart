@@ -7,6 +7,7 @@ import '../models/models.dart';
 
 class ApiService {
   static const String baseUrl = 'http://47.82.76.6/api/v1';
+  static const String wsBase = 'ws://47.82.76.6/ws/events';
 
   // 跨境到香港 VPS：连接抖动容忍 20s，接收 60s，超时/连接错误/5xx 重试 2 次
   static const Duration _connectTimeout = Duration(seconds: 20);
@@ -18,6 +19,14 @@ class ApiService {
   final _storage = const FlutterSecureStorage();
 
   bool get hasToken => _dio.options.headers['Authorization'] != null;
+
+  /// 返回当前登录 token 原文（去掉 Bearer 前缀），供 WebSocket 鉴权
+  String? get rawToken {
+    final h = _dio.options.headers['Authorization'];
+    if (h == null) return null;
+    final s = h.toString();
+    return s.startsWith('Bearer ') ? s.substring(7) : s;
+  }
 
   ApiService() {
     _dio = Dio(BaseOptions(
@@ -232,4 +241,15 @@ class ApiService {
 }
 
 // ── 全局单例 ────────────────────────────────────────────────
+  // 运行日志接口
+  Future<List<StrategyEvent>> getEvents({int limit = 200}) async {
+    final resp = await _withRetry(() => _dio.get('/events', queryParameters: {'limit': limit}));
+    return (resp.data as List).map((e) => StrategyEvent.fromJson(e)).toList();
+  }
+
+  Future<List<StrategyEvent>> getStrategyEvents(String strategyId, {int limit = 200}) async {
+    final resp = await _withRetry(() => _dio.get('/events/$strategyId', queryParameters: {'limit': limit}));
+    return (resp.data as List).map((e) => StrategyEvent.fromJson(e)).toList();
+  }
+
 final apiService = ApiService();
