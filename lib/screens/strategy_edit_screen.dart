@@ -141,7 +141,7 @@ class _StrategyEditScreenState extends State<StrategyEditScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: AppTheme.surface,
       appBar: AppBar(
         backgroundColor: AppTheme.surface,
         title: const Text('编辑策略'),
