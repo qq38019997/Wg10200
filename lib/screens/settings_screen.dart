@@ -172,43 +172,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
-
-          // 部署信息
-          _SectionTitle('部署'),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 8, height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppTheme.accent, shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text('服务器已连接', style: TextStyle(color: AppTheme.accent, fontSize: 13)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text('API: http://YOUR_SERVER_IP:8000',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                  Text('VPS: 海外（推荐新加坡/香港）',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                  const SizedBox(height: 8),
-                  Text(
-                    '首次部署需将 backend/api_service.dart 中的 baseUrl 改为你的服务器 IP',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+          ],
       ),
     );
   }

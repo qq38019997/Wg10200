@@ -393,24 +393,12 @@ class _ActivationScreenState extends ConsumerState<ActivationScreen> {
           // 类型选择
           Row(
             children: [
-              ChoiceChip(
-                label: const Text('试用码 (+1天)'),
-                selected: _genType == 'trial',
-                onSelected: (_) => setState(() { _genType = 'trial'; }),
-                selectedColor: const Color(0xFF60A5FA).withValues(alpha: 0.3),
-                labelStyle: TextStyle(
-                  color: _genType == 'trial' ? Colors.white : const Color(0xFFA0AEC0),
-                ),
+              Expanded(
+                child: _typeButton('试用码 (+1天)', 'trial'),
               ),
               const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('正式码 (+30天)'),
-                selected: _genType == 'month',
-                onSelected: (_) => setState(() { _genType = 'month'; }),
-                selectedColor: const Color(0xFF60A5FA).withValues(alpha: 0.3),
-                labelStyle: TextStyle(
-                  color: _genType == 'month' ? Colors.white : const Color(0xFFA0AEC0),
-                ),
+              Expanded(
+                child: _typeButton('正式码 (+30天)', 'month'),
               ),
             ],
           ),
@@ -634,6 +622,38 @@ class _ActivationScreenState extends ConsumerState<ActivationScreen> {
             tooltip: '复制',
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _typeButton(String label, String type) {
+    final selected = _genType == type;
+    return InkWell(
+      onTap: () => setState(() { _genType = type; }),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFF60A5FA).withValues(alpha: 0.3)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected
+                ? const Color(0xFF60A5FA)
+                : const Color(0xFF334155),
+            width: 1,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : const Color(0xFFA0AEC0),
+            fontSize: 14,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
       ),
     );
   }
