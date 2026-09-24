@@ -238,9 +238,6 @@ class ApiService {
     final resp = await _withRetry(() => _dio.get('/auth/okx-key'));
     return resp.data;
   }
-}
-
-// ── 全局单例 ────────────────────────────────────────────────
   // 运行日志接口
   Future<List<StrategyEvent>> getEvents({int limit = 200}) async {
     final resp = await _withRetry(() => _dio.get('/events', queryParameters: {'limit': limit}));
@@ -252,4 +249,7 @@ class ApiService {
     return (resp.data as List).map((e) => StrategyEvent.fromJson(e)).toList();
   }
 
+}
+
+// ── 全局单例 ────────────────────────────────────────────────
 final apiService = ApiService();
