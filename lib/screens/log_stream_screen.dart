@@ -70,6 +70,8 @@ class _LogStreamScreenState extends State<LogStreamScreen> {
           try {
             final data = jsonDecode(raw) as Map<String, dynamic>;
             final ev = StrategyEvent.fromJson(data);
+            // skip ghost empty events (WS may receive non-event JSON with empty kind/message)
+            if (ev.kind.isEmpty && ev.message.isEmpty) return;
             if (_disposed) return;
             setState(() {
               _events.insert(0, ev);
@@ -213,9 +215,12 @@ class _EventCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     if (event.strategyId != null)
-                      Text(
-                        '策略 ${event.strategyId}',
-                        style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                      Flexible(
+                        child: Text(
+                          '策略 ${event.strategyId}',
+                          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                   ],
                 ),
